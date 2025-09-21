@@ -8,18 +8,26 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^7.5.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express-validator": "^7.0.1"
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.5.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.28.3",
+    "@babel/core": "^7.28.4",
+    "@babel/node": "^7.28.0",
+    "@babel/preset-env": "^7.28.3",
     "nodemon": "^3.0.1"
   },
-  "keywords": ["leave", "management", "system"],
+  "keywords": [
+    "leave",
+    "management",
+    "system"
+  ],
   "author": "",
   "license": "ISC"
 }
