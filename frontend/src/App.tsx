@@ -10,6 +10,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import AdminDashboard from "./components/AdminDashboard";
+import ManageLeaves from "./components/ManageLeaves";
 import ApplyLeave from "./components/ApplyLeave";
 import MyLeaves from "./components/MyLeaves";
 import Navbar from "./components/Navbar";
@@ -147,6 +148,14 @@ function App() {
                 element={
                   <AdminProtectedRoute>
                     <AdminDashboard />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/manage-leaves"
+                element={
+                  <AdminProtectedRoute>
+                    <ManageLeaves />
                   </AdminProtectedRoute>
                 }
               />

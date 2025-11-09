@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../config/axios";
+import AdminSidebar from "./AdminSidebar";
 
 interface Leave {
     _id: string;
@@ -116,8 +117,10 @@ const AdminDashboard: React.FC = () => {
     }
 
     return (
-        <div>
-            <h1>HR Admin Dashboard</h1>
+        <div className="admin-layout">
+            <AdminSidebar />
+            <div className="admin-content">
+                <h1>HR Admin Dashboard</h1>
 
             {/* Statistics */}
             {stats && (
@@ -308,6 +311,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };
