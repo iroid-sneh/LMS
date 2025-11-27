@@ -6,9 +6,6 @@ const { auth, adminAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// @route   POST /api/leaves
-// @desc    Apply for leave
-// @access  Private
 router.post(
   "/",
   auth,
@@ -37,9 +34,10 @@ router.post(
       const { leaveType, startDate, endDate, duration, durationUnit, reason } =
         req.body;
 
-      // Check if dates are valid
       const start = new Date(startDate);
       const end = new Date(endDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       if (start >= end) {
         return res
@@ -47,18 +45,24 @@ router.post(
           .json({ message: "End date must be after start date" });
       }
 
-      if (start < new Date()) {
+      const startDateOnly = new Date(start);
+      startDateOnly.setHours(0, 0, 0, 0);
+      if (startDateOnly < today) {
         return res
           .status(400)
-          .json({ message: "Cannot apply for leave in the past" });
+          .json({ message: "Start date must be today or later" });
       }
+
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const calculatedDuration = durationUnit === "hours" ? diffDays * 8 : diffDays;
 
       const leave = new Leave({
         employee: req.user._id,
         leaveType,
         startDate: start,
         endDate: end,
-        duration,
+        duration: calculatedDuration,
         durationUnit,
         reason,
       });
@@ -77,9 +81,6 @@ router.post(
   },
 );
 
-// @route   GET /api/leaves/my-leaves
-// @desc    Get current user's leaves
-// @access  Private
 router.get("/my-leaves", auth, async (req, res) => {
   try {
     const leaves = await Leave.find({ employee: req.user._id })
@@ -94,9 +95,6 @@ router.get("/my-leaves", auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/leaves/all
-// @desc    Get all leave requests (HR only)
-// @access  Private (HR)
 router.get("/all", auth, adminAuth, async (req, res) => {
   try {
     const leaves = await Leave.find()
@@ -111,9 +109,6 @@ router.get("/all", auth, adminAuth, async (req, res) => {
   }
 });
 
-// @route   GET /api/leaves/today
-// @desc    Get today's leaves
-// @access  Private
 router.get("/today", auth, async (req, res) => {
   try {
     const today = new Date();
@@ -136,9 +131,6 @@ router.get("/today", auth, async (req, res) => {
   }
 });
 
-// @route   PUT /api/leaves/:id/approve
-// @desc    Approve leave request (HR only)
-// @access  Private (HR)
 router.put(
   "/:id/approve",
   auth,
@@ -179,9 +171,6 @@ router.put(
   },
 );
 
-// @route   PUT /api/leaves/:id/reject
-// @desc    Reject leave request (HR only)
-// @access  Private (HR)
 router.put(
   "/:id/reject",
   auth,
@@ -233,9 +222,108 @@ router.put(
   },
 );
 
-// @route   GET /api/leaves/:id
-// @desc    Get single leave request
-// @access  Private
+router.put(
+  "/:id",
+  auth,
+  [
+    body("leaveType")
+      .optional()
+      .isIn(["sick", "vacation", "personal", "emergency", "other"])
+      .withMessage("Invalid leave type"),
+    body("startDate").optional().isISO8601().withMessage("Invalid start date"),
+    body("endDate").optional().isISO8601().withMessage("Invalid end date"),
+    body("reason").optional().trim().isLength({ min: 10 }).withMessage("Reason must be at least 10 characters"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const leave = await Leave.findById(req.params.id);
+
+      if (!leave) {
+        return res.status(404).json({ message: "Leave request not found" });
+      }
+
+      if (leave.employee.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "You can only edit your own leaves" });
+      }
+
+      if (leave.status !== "pending") {
+        return res.status(400).json({ message: "Can only edit pending leave requests" });
+      }
+
+      const { leaveType, startDate, endDate, reason } = req.body;
+
+      if (leaveType) {
+        leave.leaveType = leaveType;
+      }
+      if (startDate) {
+        const start = new Date(startDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDateOnly = new Date(start);
+        startDateOnly.setHours(0, 0, 0, 0);
+        if (startDateOnly < today) {
+          return res.status(400).json({ message: "Start date must be today or later" });
+        }
+        leave.startDate = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        leave.endDate = end;
+      }
+      if (reason) {
+        leave.reason = reason;
+      }
+
+      if (leave.startDate && leave.endDate) {
+        if (leave.startDate >= leave.endDate) {
+          return res.status(400).json({ message: "End date must be after start date" });
+        }
+        const diffTime = Math.abs(leave.endDate.getTime() - leave.startDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        leave.duration = diffDays;
+      }
+
+      await leave.save();
+      await leave.populate("employee", "name email employeeId department position");
+
+      res.json(leave);
+    } catch (error) {
+      console.error("Update leave error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const leave = await Leave.findById(req.params.id);
+
+    if (!leave) {
+      return res.status(404).json({ message: "Leave request not found" });
+    }
+
+    if (leave.employee.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You can only cancel your own leaves" });
+    }
+
+    if (leave.status !== "pending") {
+      return res.status(400).json({ message: "Can only cancel pending leave requests" });
+    }
+
+    await Leave.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "Leave request cancelled successfully" });
+  } catch (error) {
+    console.error("Delete leave error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/:id", auth, async (req, res) => {
   try {
     const leave = await Leave.findById(req.params.id)
@@ -246,7 +334,6 @@ router.get("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Leave request not found" });
     }
 
-    // Check if user can access this leave request
     if (
       req.user.role !== "hr" &&
       leave.employee._id.toString() !== req.user._id.toString()

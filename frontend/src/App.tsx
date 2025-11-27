@@ -15,8 +15,8 @@ import ApplyLeave from "./components/ApplyLeave";
 import MyLeaves from "./components/MyLeaves";
 import Navbar from "./components/Navbar";
 import LandingPage from "./components/LandingPage";
+import EmployeeManagement from "./components/EmployeeManagement";
 
-// Protected Route Component for Office Users
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
@@ -33,7 +33,6 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
-// Admin Protected Route Component
 const AdminProtectedRoute: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
@@ -54,7 +53,6 @@ const AdminProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
-// Public Route Component (redirect if logged in)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -69,7 +67,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// Admin Public Route Component
 const AdminPublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -92,7 +89,6 @@ function App() {
           <Navbar />
           <div className="container">
             <Routes>
-              {/* Office User Routes */}
               <Route
                 path="/login"
                 element={
@@ -134,7 +130,6 @@ function App() {
                 }
               />
 
-              {/* Admin Routes */}
               <Route
                 path="/admin/login"
                 element={
@@ -159,8 +154,15 @@ function App() {
                   </AdminProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/employees"
+                element={
+                  <AdminProtectedRoute>
+                    <EmployeeManagement />
+                  </AdminProtectedRoute>
+                }
+              />
 
-              {/* Landing Page */}
               <Route path="/" element={<LandingPage />} />
             </Routes>
           </div>

@@ -59,14 +59,18 @@ const ApplyLeave: React.FC = () => {
 
         const startDate = new Date(formData.startDate);
         const endDate = new Date(formData.endDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDateOnly = new Date(startDate);
+        startDateOnly.setHours(0, 0, 0, 0);
 
         if (startDate >= endDate) {
             setError("End date must be after start date");
             return;
         }
 
-        if (startDate < new Date()) {
-            setError("Cannot apply for leave in the past");
+        if (startDateOnly < today) {
+            setError("Start date must be today or later");
             return;
         }
 

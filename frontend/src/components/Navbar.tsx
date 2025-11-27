@@ -11,7 +11,6 @@ const Navbar: React.FC = () => {
 
   const isAdminRoute = window.location.pathname.startsWith('/admin');
   
-  // Hide navbar on admin pages (they have their own sidebar)
   if (isAdminRoute) {
     return null;
   }

@@ -65,7 +65,6 @@ const leaveSchema = new mongoose.Schema(
   },
 );
 
-// Index for efficient queries
 leaveSchema.index({ employee: 1, status: 1 });
 leaveSchema.index({ startDate: 1, endDate: 1 });
 

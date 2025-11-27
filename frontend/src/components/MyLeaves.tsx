@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../config/axios";
 
 interface Leave {
@@ -21,8 +22,16 @@ interface Leave {
 }
 
 const MyLeaves: React.FC = () => {
+    const navigate = useNavigate();
     const [leaves, setLeaves] = useState<Leave[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingLeave, setEditingLeave] = useState<Leave | null>(null);
+    const [editForm, setEditForm] = useState({
+        leaveType: "",
+        startDate: "",
+        endDate: "",
+        reason: "",
+    });
 
     useEffect(() => {
         fetchLeaves();
@@ -36,6 +45,43 @@ const MyLeaves: React.FC = () => {
             console.error("Error fetching leaves:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCancel = async (leaveId: string) => {
+        if (!window.confirm("Are you sure you want to cancel this leave request?")) {
+            return;
+        }
+
+        try {
+            await api.delete(`/leaves/${leaveId}`);
+            await fetchLeaves();
+            alert("Leave request cancelled successfully");
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Failed to cancel leave request");
+        }
+    };
+
+    const handleEdit = (leave: Leave) => {
+        setEditingLeave(leave);
+        setEditForm({
+            leaveType: leave.leaveType,
+            startDate: leave.startDate.split("T")[0],
+            endDate: leave.endDate.split("T")[0],
+            reason: leave.reason,
+        });
+    };
+
+    const handleUpdate = async () => {
+        if (!editingLeave) return;
+
+        try {
+            await api.put(`/leaves/${editingLeave._id}`, editForm);
+            await fetchLeaves();
+            setEditingLeave(null);
+            alert("Leave request updated successfully");
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Failed to update leave request");
         }
     };
 
@@ -116,14 +162,16 @@ const MyLeaves: React.FC = () => {
                                             {formatDateTime(leave.appliedAt)}
                                         </td>
                                         <td>
-                                            <button
-                                                className="btn btn-secondary"
-                                                style={{
-                                                    padding: "5px 10px",
-                                                    fontSize: "12px",
-                                                }}
-                                                onClick={() => {
-                                                    const details = `
+                                            <div className="d-flex">
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    style={{
+                                                        padding: "5px 10px",
+                                                        fontSize: "12px",
+                                                        marginRight: "5px",
+                                                    }}
+                                                    onClick={() => {
+                                                        const details = `
 Leave Details:
 Type: ${leave.leaveType}
 Start Date: ${formatDate(leave.startDate)}
@@ -137,16 +185,112 @@ ${leave.rejectedReason ? `Rejection Reason: ${leave.rejectedReason}` : ""}
 ${leave.reviewedBy ? `Reviewed By: ${leave.reviewedBy.name}` : ""}
 ${leave.reviewedAt ? `Reviewed At: ${formatDateTime(leave.reviewedAt)}` : ""}
                           `;
-                                                    alert(details);
-                                                }}
-                                            >
-                                                View Details
-                                            </button>
+                                                        alert(details);
+                                                    }}
+                                                >
+                                                    View Details
+                                                </button>
+                                                {leave.status === "pending" && (
+                                                    <>
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            style={{
+                                                                padding: "5px 10px",
+                                                                fontSize: "12px",
+                                                                marginRight: "5px",
+                                                            }}
+                                                            onClick={() => handleEdit(leave)}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-danger"
+                                                            style={{
+                                                                padding: "5px 10px",
+                                                                fontSize: "12px",
+                                                            }}
+                                                            onClick={() => handleCancel(leave._id)}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {editingLeave && (
+                <div className="card" style={{ marginTop: "20px" }}>
+                    <div className="card-header">
+                        <h2>Edit Leave Request</h2>
+                    </div>
+                    <div className="card-body">
+                        <div className="form-group">
+                            <label>Leave Type</label>
+                            <select
+                                value={editForm.leaveType}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, leaveType: e.target.value })
+                                }
+                            >
+                                <option value="sick">Sick Leave</option>
+                                <option value="vacation">Vacation</option>
+                                <option value="personal">Personal</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Start Date</label>
+                            <input
+                                type="date"
+                                value={editForm.startDate}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, startDate: e.target.value })
+                                }
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>End Date</label>
+                            <input
+                                type="date"
+                                value={editForm.endDate}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, endDate: e.target.value })
+                                }
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Reason</label>
+                            <textarea
+                                value={editForm.reason}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, reason: e.target.value })
+                                }
+                                rows={4}
+                            />
+                        </div>
+                        <div className="d-flex">
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleUpdate}
+                            >
+                                Update
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setEditingLeave(null)}
+                                style={{ marginLeft: "10px" }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

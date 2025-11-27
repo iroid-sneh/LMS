@@ -5,9 +5,6 @@ const { auth, adminAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// @route   GET /api/users/employees
-// @desc    Get all employees (HR only)
-// @access  Private (HR)
 router.get("/employees", auth, adminAuth, async (req, res) => {
   try {
     const employees = await User.find({ role: "employee" })
@@ -21,9 +18,6 @@ router.get("/employees", auth, adminAuth, async (req, res) => {
   }
 });
 
-// @route   GET /api/users/stats
-// @desc    Get user statistics
-// @access  Private
 router.get("/stats", auth, async (req, res) => {
   try {
     const userId = req.user._id;
@@ -54,9 +48,6 @@ router.get("/stats", auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/users/admin-stats
-// @desc    Get admin statistics (HR only)
-// @access  Private (HR)
 router.get("/admin-stats", auth, adminAuth, async (req, res) => {
   try {
     const totalEmployees = await User.countDocuments({ role: "employee" });
@@ -65,7 +56,6 @@ router.get("/admin-stats", auth, adminAuth, async (req, res) => {
     const approvedLeaves = await Leave.countDocuments({ status: "approved" });
     const rejectedLeaves = await Leave.countDocuments({ status: "rejected" });
 
-    // Today's leaves
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);

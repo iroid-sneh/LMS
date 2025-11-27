@@ -40,6 +40,14 @@ const AdminSidebar: React.FC = () => {
         >
           <span className="admin-nav-text">Manage Leaves</span>
         </Link>
+        <Link
+          to="/admin/employees"
+          className={`admin-nav-item ${
+            isActive("/admin/employees") ? "active" : ""
+          }`}
+        >
+          <span className="admin-nav-text">Employee Management</span>
+        </Link>
       </nav>
 
       <div className="admin-sidebar-footer">
