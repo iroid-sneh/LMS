@@ -7,153 +7,162 @@ const { auth } = require("../middleware/auth");
 const router = express.Router();
 
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || "fallback_secret", {
-    expiresIn: "7d",
-  });
+    return jwt.sign({ userId }, process.env.JWT_SECRET || "fallback_secret", {
+        expiresIn: "7d",
+    });
 };
 
 router.post(
-  "/register",
-  [
-    body("name")
-      .trim()
-      .isLength({ min: 2 })
-      .withMessage("Name must be at least 2 characters"),
-    body("email").isEmail().withMessage("Please enter a valid email"),
-    body("password")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters"),
-    body("department").trim().notEmpty().withMessage("Department is required"),
-    body("position").trim().notEmpty().withMessage("Position is required"),
-    body("employeeId").trim().notEmpty().withMessage("Employee ID is required"),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
+    "/register",
+    [
+        body("name")
+            .trim()
+            .isLength({ min: 2 })
+            .withMessage("Name must be at least 2 characters"),
+        body("email").isEmail().withMessage("Please enter a valid email"),
+        body("password")
+            .isLength({ min: 6 })
+            .withMessage("Password must be at least 6 characters"),
+        body("department")
+            .trim()
+            .notEmpty()
+            .withMessage("Department is required"),
+        body("position").trim().notEmpty().withMessage("Position is required"),
+        body("employeeId")
+            .trim()
+            .notEmpty()
+            .withMessage("Employee ID is required"),
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ errors: errors.array() });
+            }
 
-      const {
-        name,
-        email,
-        password,
-        department,
-        position,
-        employeeId,
-        phone,
-        role,
-      } = req.body;
+            const {
+                name,
+                email,
+                password,
+                department,
+                position,
+                employeeId,
+                phone,
+                role,
+            } = req.body;
 
-      const existingUser = await User.findOne({
-        $or: [{ email }, { employeeId }],
-      });
+            const existingUser = await User.findOne({
+                $or: [{ email }, { employeeId }],
+            });
 
-      if (existingUser) {
-        return res.status(400).json({
-          message: "User with this email or employee ID already exists",
-        });
-      }
+            if (existingUser) {
+                return res.status(400).json({
+                    message:
+                        "User with this email or employee ID already exists",
+                });
+            }
 
-      const user = new User({
-        name,
-        email,
-        password,
-        department,
-        position,
-        employeeId,
-        phone,
-        role: role || "employee",
-      });
+            const user = new User({
+                name,
+                email,
+                password,
+                department,
+                position,
+                employeeId,
+                phone,
+                role: role || "employee",
+            });
 
-      await user.save();
+            await user.save();
 
-      const token = generateToken(user._id);
+            const token = generateToken(user._id);
 
-      res.status(201).json({
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          department: user.department,
-          position: user.position,
-          employeeId: user.employeeId,
-        },
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Server error" });
+            res.status(201).json({
+                token,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    department: user.department,
+                    position: user.position,
+                    employeeId: user.employeeId,
+                },
+            });
+        } catch (error) {
+            console.error("Registration error:", error);
+            res.status(500).json({ message: "Server error" });
+        }
     }
-  },
 );
 
 router.post(
-  "/login",
-  [
-    body("email").isEmail().withMessage("Please enter a valid email"),
-    body("password").exists().withMessage("Password is required"),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
+    "/login",
+    [
+        body("email").isEmail().withMessage("Please enter a valid email"),
+        body("password").exists().withMessage("Password is required"),
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ errors: errors.array() });
+            }
 
-      const { email, password } = req.body;
+            const { email, password } = req.body;
 
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
+            const user = await User.findOne({ email });
+            if (!user) {
+                return res
+                    .status(400)
+                    .json({ message: "User Not Found, Please Register First" });
+            }
 
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
+            const isMatch = await user.comparePassword(password);
+            if (!isMatch) {
+                return res.status(400).json({ message: "Invalid credentials" });
+            }
 
-      const token = generateToken(user._id);
+            const token = generateToken(user._id);
 
-      res.json({
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          department: user.department,
-          position: user.position,
-          employeeId: user.employeeId,
-        },
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Server error" });
+            res.json({
+                token,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    department: user.department,
+                    position: user.position,
+                    employeeId: user.employeeId,
+                },
+            });
+        } catch (error) {
+            console.error("Login error:", error);
+            res.status(500).json({ message: "Server error" });
+        }
     }
-  },
 );
 
 router.get("/me", auth, async (req, res) => {
-  try {
-    res.json({
-      user: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        department: req.user.department,
-        position: req.user.position,
-        employeeId: req.user.employeeId,
-        phone: req.user.phone,
-        joiningDate: req.user.joiningDate,
-      },
-    });
-  } catch (error) {
-    console.error("Get user error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
+    try {
+        res.json({
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role,
+                department: req.user.department,
+                position: req.user.position,
+                employeeId: req.user.employeeId,
+                phone: req.user.phone,
+                joiningDate: req.user.joiningDate,
+            },
+        });
+    } catch (error) {
+        console.error("Get user error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
 });
 
 module.exports = router;
