@@ -58,12 +58,12 @@ router.get("/admin-stats", auth, adminAuth, async (req, res) => {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
 
     const todayLeaves = await Leave.find({
       status: "approved",
-      startDate: { $lte: today },
+      startDate: { $lte: endOfToday },
       endDate: { $gte: today },
     }).populate("employee", "name email employeeId department position");
 

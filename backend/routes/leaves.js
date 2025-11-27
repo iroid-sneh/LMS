@@ -113,12 +113,12 @@ router.get("/today", auth, async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
 
     const leaves = await Leave.find({
       status: "approved",
-      startDate: { $lte: today },
+      startDate: { $lte: endOfToday },
       endDate: { $gte: today },
     })
       .populate("employee", "name email employeeId department position")
